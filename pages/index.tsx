@@ -17,6 +17,7 @@ const navItems: MenuProps['items'] = [
   { key: '5', label: '图片' },
   { key: '6', label: '视频' },
   { key: '7', label: '地图' },
+  { key: '8', label: <Link href="/weather">空气质量</Link> },
 ];
 
 const onSearch = (value: string) => console.log(`Searching for: ${value}`);
