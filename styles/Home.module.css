@@ -1,16 +1,26 @@
-.container {
+.layout {
+  min-height: 100vh;
+  background-color: #f0f2f5;
+}
+
+.header {
+  background-color: #fff;
+  padding: 0 50px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.content {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  background-color: #f0f2f5;
+  padding: 50px;
 }
 
 .logo {
   font-size: 60px;
   font-weight: bold;
-  color: #1890ff; /* Ant Design's primary color */
+  color: #1890ff;
   margin-bottom: 40px;
 }
 

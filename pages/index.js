@@ -1,23 +1,45 @@
 import Head from 'next/head';
-import { Input, Space } from 'antd';
+import { Input, Layout, Menu, Space } from 'antd';
 import styles from '../styles/Home.module.css';
 
+const { Header, Content } = Layout;
 const { Search } = Input;
+
+// 模拟百度导航项
+const navItems = [
+  { key: '1', label: '新闻' },
+  { key: '2', label: '贴吧' },
+  { key: '3', label: '知道' },
+  { key: '4', label: '文库' },
+  { key: '5', label: '图片' },
+  { key: '6', label: '视频' },
+  { key: '7', label: '地图' },
+];
 
 const onSearch = (value) => console.log(`Searching for: ${value}`);
 
 export default function HomePage() {
   return (
-    <div className={styles.container}>
+    <Layout className={styles.layout}>
       <Head>
         <title>首页</title>
         <meta name="description" content="A Next.js homepage clone" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main>
+      <Header className={styles.header}>
+        <Menu 
+          theme="light" 
+          mode="horizontal" 
+          defaultSelectedKeys={['2']} 
+          items={navItems} 
+          style={{ lineHeight: '62px' }} // 64px is header height, 62px makes it vertically centered
+        />
+      </Header>
+
+      <Content className={styles.content}>
         <div className={styles.logo}>
-          Canyon
+          CANYON
         </div>
         <Space direction="vertical" size="large">
           <Search
@@ -28,7 +50,7 @@ export default function HomePage() {
             className={styles.searchBox}
           />
         </Space>
-      </main>
-    </div>
+      </Content>
+    </Layout>
   );
 }

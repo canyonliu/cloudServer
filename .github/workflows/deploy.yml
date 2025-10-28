@@ -12,16 +12,16 @@ jobs:
 
     steps:
     # 1. 检出代码，让工作流可以访问你的代码
-    - name: Checkout code
+    - name: Checkout code-代码拷贝
       uses: actions/checkout@v3
 
     # 2. 设置SSH，登录到你的服务器
-    - name: Setup SSH
+    - name: Setup SSH--登录云服务器
       uses: webfactory/ssh-agent@v0.5.3
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
     # 3. 在服务器上执行部署脚本
-    - name: Run deployment script
+    - name: Run deployment script--部署脚本-运行docker部署
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'cd ~/deploy/cloud_云服务/cloudServer && chmod +x deploy.sh && ./deploy.sh'
