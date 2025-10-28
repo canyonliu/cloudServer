@@ -7,8 +7,10 @@ import styles from '../styles/Home.module.css';
 const { Header, Content } = Layout;
 const { Search } = Input;
 
+import Link from 'next/link';
+
 const navItems: MenuProps['items'] = [
-  { key: '1', label: '新闻' },
+  { key: '1', label: <Link href="/news">新闻</Link> },
   { key: '2', label: '贴吧' },
   { key: '3', label: '知道' },
   { key: '4', label: '文库' },

@@ -2,3 +2,4 @@
 node_modules
 \n# Next.js build output\n.next
 .next
+\n# Environment variables\n.env.local

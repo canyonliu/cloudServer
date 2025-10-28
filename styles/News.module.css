@@ -1,0 +1,29 @@
+.container {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 24px;
+  background: #fff;
+  min-height: 80vh;
+}
+
+.cardImage {
+  height: 180px;
+  object-fit: cover;
+}
+
+.cardMeta {
+  height: 80px; /* Fixed height for meta section */
+}
+
+.cardMeta description {
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Limit description to 2 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pagination {
+  text-align: center;
+  margin-top: 40px;
+}
