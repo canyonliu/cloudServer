@@ -24,4 +24,4 @@ jobs:
     # 3. 在服务器上执行部署脚本
     - name: Run deployment script
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'cd /home/qingcan/deploy/cloud_云服务/cloudServer && ./deploy.sh'
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'cd ~/deploy/cloud_云服务/cloudServer && ./deploy.sh'
