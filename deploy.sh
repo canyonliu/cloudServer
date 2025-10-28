@@ -17,7 +17,7 @@ sudo docker build -t cloud-node:$IMAGE_TAG .
 if [ $(sudo docker ps -q -f name=my-running-cloud) ]; then
     echo "Stopping and removing old container..."
     sudo docker stop my-running-cloud
-    sudo docker rm my-running-d
+    sudo docker rm my-running-cloud
 fi
 
 # 4. 运行新的容器
