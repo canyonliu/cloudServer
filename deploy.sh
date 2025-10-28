@@ -5,7 +5,7 @@ set -e
 
 # 1. 拉取最新的代码
 echo "拉取最新代码-Pulling latest code..."
-git pull origin main
+git pull origin deploy
 
 # 2. 重新构建Docker镜像
 # 我们使用 GitHub 的提交哈希作为版本号，保证唯一性
