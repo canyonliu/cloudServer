@@ -11,25 +11,21 @@ jobs:
       - name: Checkout repository (检出代码)
         uses: actions/checkout@v4
 
+      - name: Debug File Contents (调试文件内容)
+        run: |
+          echo "--- Checking package.json for typescript ---"
+          grep '"typescript"' package.json || echo "!!! typescript NOT FOUND in package.json"
+          echo
+          echo "--- Checking package-lock.json for typescript ---"
+          grep -A 5 -B 2 '"typescript"' package-lock.json || echo "!!! typescript NOT FOUND in package-lock.json"
+
       - name: Setup Node.js (设置Node.js环境)
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          # Temporarily disable cache to ensure a fully clean install for debugging
 
       - name: Install Dependencies (安装依赖)
         run: npm ci
-
-      - name: Verify TypeScript Installation (验证TS安装)
-        run: |
-          echo "Checking for typescript package in node_modules..."
-          if [ -d "node_modules/typescript" ]; then
-            echo "OK: TypeScript package found."
-            ls -la node_modules/typescript
-          else
-            echo "ERROR: TypeScript package NOT found after npm ci."
-            exit 1
-          fi
 
       - name: Build Next.js Application (构建Next.js应用)
         run: npm run build
