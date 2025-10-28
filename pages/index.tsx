@@ -1,12 +1,13 @@
 import Head from 'next/head';
+import type { FC } from 'react';
 import { Input, Layout, Menu, Space } from 'antd';
+import type { MenuProps } from 'antd';
 import styles from '../styles/Home.module.css';
 
 const { Header, Content } = Layout;
 const { Search } = Input;
 
-// 模拟百度导航项
-const navItems = [
+const navItems: MenuProps['items'] = [
   { key: '1', label: '新闻' },
   { key: '2', label: '贴吧' },
   { key: '3', label: '知道' },
@@ -16,9 +17,9 @@ const navItems = [
   { key: '7', label: '地图' },
 ];
 
-const onSearch = (value) => console.log(`Searching for: ${value}`);
+const onSearch = (value: string) => console.log(`Searching for: ${value}`);
 
-export default function HomePage() {
+const HomePage: FC = () => {
   return (
     <Layout className={styles.layout}>
       <Head>
@@ -33,7 +34,7 @@ export default function HomePage() {
           mode="horizontal" 
           defaultSelectedKeys={['2']} 
           items={navItems} 
-          style={{ lineHeight: '62px' }} // 64px is header height, 62px makes it vertically centered
+          style={{ lineHeight: '62px' }}
         />
       </Header>
 
@@ -54,3 +55,5 @@ export default function HomePage() {
     </Layout>
   );
 }
+
+export default HomePage;
