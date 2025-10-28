@@ -15,10 +15,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
+          # Temporarily disable cache to ensure a fully clean install for debugging
 
       - name: Install Dependencies (安装依赖)
         run: npm ci
+
+      - name: Verify TypeScript Installation (验证TS安装)
+        run: |
+          echo "Checking for typescript package in node_modules..."
+          if [ -d "node_modules/typescript" ]; then
+            echo "OK: TypeScript package found."
+            ls -la node_modules/typescript
+          else
+            echo "ERROR: TypeScript package NOT found after npm ci."
+            exit 1
+          fi
 
       - name: Build Next.js Application (构建Next.js应用)
         run: npm run build
@@ -27,7 +38,9 @@ jobs:
         run: |
           mkdir -p public deployment-package
           cp -r .next deployment-package/
-          cp -r public deployment-package/
+          if [ -d "public" ]; then
+            cp -r public deployment-package/
+          fi
           cp next.config.js package.json Dockerfile deployment-package/
           tar -czf deployment-package.tar.gz -C deployment-package .
 
