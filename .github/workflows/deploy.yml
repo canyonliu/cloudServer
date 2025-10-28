@@ -1,0 +1,27 @@
+name: Deploy to Server
+
+# 当代码推送到main分支时触发
+on:
+  push:
+    branches:
+      - deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. 检出代码，让工作流可以访问你的代码
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # 2. 设置SSH，登录到你的服务器
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    # 3. 在服务器上执行部署脚本
+    - name: Run deployment script
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'cd my-node-app && ./deploy.sh'
