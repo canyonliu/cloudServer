@@ -1,21 +1,28 @@
-# 使用一个轻量级的 Node.js 官方镜像作为基础
-FROM node:18-alpine
-
-# 在容器内创建一个工作目录
+# Stage 1: Install dependencies
+FROM node:18-alpine AS deps
 WORKDIR /app
 
-# 复制 package.json 和 package-lock.json 到工作目录
-# 我们分开复制是为了利用Docker的层缓存机制
-COPY package*.json ./
-
-# 安装项目依赖
+COPY package.json package-lock.json* ./
 RUN npm install
 
-# 将你项目中的所有文件复制到工作目录
+# Stage 2: Build the application
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# 暴露容器的3000端口，让外部可以访问
+RUN npm run build
+
+# Stage 3: Production image
+FROM node:18-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
 EXPOSE 3000
 
-# 定义容器启动时执行的命令
-CMD [ "node", "app.js" ]
+CMD ["node", "server.js"]

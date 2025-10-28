@@ -1,0 +1,19 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f0f2f5;
+}
+
+.logo {
+  font-size: 60px;
+  font-weight: bold;
+  color: #1890ff; /* Ant Design's primary color */
+  margin-bottom: 40px;
+}
+
+.searchBox {
+  width: 600px;
+}
