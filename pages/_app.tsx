@@ -1,3 +1,4 @@
+import Layout from '../components/Layout';
 import '../styles/globals.css';
 import '../styles/nprogress.css'; // Import nprogress styles
 import type { AppProps } from 'next/app';
@@ -29,7 +30,11 @@ function MyApp({ Component, pageProps }: AppProps) {
     }
   }, [router])
 
-  return <Component {...pageProps} />;
+  return (
+    <Layout>
+      <Component {...pageProps} />
+    </Layout>
+  );
 }
 
 export default MyApp;
