@@ -6,6 +6,8 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import NProgress from 'nprogress';
 
+import { AuthProvider } from '../context/AuthContext';
+
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
 
@@ -31,9 +33,11 @@ function MyApp({ Component, pageProps }: AppProps) {
   }, [router])
 
   return (
-    <Layout>
-      <Component {...pageProps} />
-    </Layout>
+    <AuthProvider>
+      <Layout>
+        <Component {...pageProps} />
+      </Layout>
+    </AuthProvider>
   );
 }
 
