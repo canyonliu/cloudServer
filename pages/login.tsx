@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, MouseEvent } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
 
@@ -16,13 +16,25 @@ const LoginPage = () => {
     const response = await login(email, password);
 
     if (response.ok) {
-      // On successful login, check for a redirect query param
       const redirectPath = router.query.redirect as string | undefined;
-      // Redirect to the stored path or to the homepage as a fallback
       router.push(redirectPath || '/');
     } else {
       const data = await response.json();
       setError(data.error || 'Something went wrong.');
+    }
+  };
+
+  const handleSkipLogin = async (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    setError(null);
+
+    const response = await login('admin@example.com', 'password123');
+
+    if (response.ok) {
+      const redirectPath = router.query.redirect as string | undefined;
+      router.push(redirectPath || '/');
+    } else {
+      setError('Could not perform the skip login. Please check the mock user credentials.');
     }
   };
 
@@ -41,7 +53,6 @@ const LoginPage = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@example.com"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               required
             />
@@ -55,17 +66,22 @@ const LoginPage = () => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="password123"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
               required
             />
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4">
             <button
               type="submit"
               className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
             >
               Sign In
+            </button>
+            <button
+              onClick={handleSkipLogin}
+              className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
+            >
+              Skip Login (for development)
             </button>
           </div>
         </form>
