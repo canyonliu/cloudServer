@@ -9,7 +9,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: () => Promise<void>;
+  login: (email: string, password: string) => Promise<Response>;
   logout: () => Promise<void>;
 }
 
@@ -20,31 +20,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const fetchUser = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch('/api/me');
-      const data = await res.json();
-      setUser(data.user);
-    } catch (error) {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('/api/me');
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchUser();
   }, []);
 
-  const login = async () => {
-    await fetchUser();
+  const login = async (email: string, password: string) => {
+    const response = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (response.ok) {
+      const data = await fetch('/api/me').then(res => res.json());
+      setUser(data.user);
+    }
+    return response;
   };
 
   const logout = async () => {
-    await fetch('/api/logout', { method: 'POST' });
-    setUser(null);
-    router.push('/login');
+    const response = await fetch('/api/logout', { method: 'POST' });
+    if (response.ok) {
+      setUser(null);
+      router.push('/login');
+    }
   };
 
   return (

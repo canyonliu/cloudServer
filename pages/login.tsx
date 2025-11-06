@@ -1,27 +1,25 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/router';
+import { useAuth } from '../context/AuthContext';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    const response = await fetch('/api/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
+    const response = await login(email, password);
 
     if (response.ok) {
-      // Redirect to home page on successful login
-      router.push('/');
+      // On successful login, check for a redirect query param
+      const redirectPath = router.query.redirect as string | undefined;
+      // Redirect to the stored path or to the homepage as a fallback
+      router.push(redirectPath || '/');
     } else {
       const data = await response.json();
       setError(data.error || 'Something went wrong.');
