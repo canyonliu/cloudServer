@@ -9,7 +9,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const { email, password } = req.body;
 
   // IMPORTANT: In a real application, you would validate the credentials against a database.
-  if (email === 'admin@example.com' && password === 'password123') {
+  if (email === 'admin@example.com' && password === process.env.MOCK_USER_PASSWORD) {
     // Create a mock session token or user data to store in the cookie
     const user = { email: 'admin@example.com', name: 'Admin User' };
     const token = Buffer.from(JSON.stringify(user)).toString('base64'); // Simple encoding for demo

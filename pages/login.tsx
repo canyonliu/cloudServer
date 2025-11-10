@@ -28,7 +28,15 @@ const LoginPage = () => {
     e.preventDefault();
     setError(null);
 
-    const response = await login('admin@example.com', 'password123');
+    const skipEmail = process.env.NEXT_PUBLIC_MOCK_USER_EMAIL || '';
+    const skipPassword = process.env.NEXT_PUBLIC_MOCK_USER_PASSWORD || '';
+
+    if (!skipEmail || !skipPassword) {
+      setError('Skip login credentials are not configured in the environment.');
+      return;
+    }
+
+    const response = await login(skipEmail, skipPassword);
 
     if (response.ok) {
       const redirectPath = router.query.redirect as string | undefined;
