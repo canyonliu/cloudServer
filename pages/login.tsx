@@ -1,6 +1,7 @@
 import { useState, FormEvent, MouseEvent } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
+import { MOCK_CREDENTIALS } from '../shared.config';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -28,15 +29,7 @@ const LoginPage = () => {
     e.preventDefault();
     setError(null);
 
-    const skipEmail = process.env.NEXT_PUBLIC_MOCK_USER_EMAIL || '';
-    const skipPassword = process.env.NEXT_PUBLIC_MOCK_USER_PASSWORD || '';
-
-    if (!skipEmail || !skipPassword) {
-      setError('Skip login credentials are not configured in the environment.');
-      return;
-    }
-
-    const response = await login(skipEmail, skipPassword);
+    const response = await login(MOCK_CREDENTIALS.email, MOCK_CREDENTIALS.password);
 
     if (response.ok) {
       const redirectPath = router.query.redirect as string | undefined;

@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { serialize } from 'cookie';
+import { MOCK_CREDENTIALS } from '../../shared.config';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -9,9 +10,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const { email, password } = req.body;
 
   // IMPORTANT: In a real application, you would validate the credentials against a database.
-  if (email === 'admin@example.com' && password === process.env.MOCK_USER_PASSWORD) {
+  if (email === MOCK_CREDENTIALS.email && password === MOCK_CREDENTIALS.password) {
     // Create a mock session token or user data to store in the cookie
-    const user = { email: 'admin@example.com', name: 'Admin User' };
+    const user = { email: MOCK_CREDENTIALS.email, name: 'Admin User' };
     const token = Buffer.from(JSON.stringify(user)).toString('base64'); // Simple encoding for demo
 
     const cookie = serialize('auth_token', token, {
