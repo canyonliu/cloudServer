@@ -1,5 +1,13 @@
 # 忽略 node_modules 文件夹
 node_modules
-\n# Next.js build output\n.next
+
+# Next.js build output
 .next
-\n# Environment variables\n.env.local
+
+# Environment variables
+.env.local
+
+# Prisma
+/lib/generated/prisma
+*.db
+*.db-journal
