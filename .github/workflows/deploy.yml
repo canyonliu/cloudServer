@@ -2,7 +2,7 @@ name: Build on GitHub and Deploy to Server (远程构建与部署)
 
 on:
   push:
-    branches: ["deploy"]
+    branches: ["before_database"]
 
 jobs:
   build-and-deploy:
