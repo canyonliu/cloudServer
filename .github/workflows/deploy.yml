@@ -21,26 +21,28 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma Client (生成Prisma客户端)
-        # 关键修正：在此步骤注入环境变量
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: npx prisma generate
 
-
       - name: Build Next.js Application (构建Next.js应用)
-        # 关键修正：在此步骤注入环境变量
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: npm run build
 
       - name: Create Deployment Package (创建部署压缩包)
         run: |
-          mkdir -p deployment-package
+          # 关键修正：预先创建所有需要的子目录
+          mkdir -p deployment-package/.next
+          
+          # 复制所有构建产物
           cp -r .next/standalone deployment-package/
-          cp -r .next/static deployment-package/.next/static
+          cp -r .next/static deployment-package/.next/
           if [ -d "public" ]; then cp -r public deployment-package/; fi
           cp -r prisma deployment-package/
           cp package.json Dockerfile deployment-package/
+          
+          # 打包
           tar -czf deployment-package.tar.gz -C deployment-package .
 
       - name: Ensure Directories Exist on Server (确保服务器目录存在)
@@ -75,7 +77,6 @@ jobs:
             sudo docker build -t my-next-app:${{ github.sha }} .
             
             echo "Running database migration..."
-            # 修正：将宿主机文件挂载到容器内的 /app/prisma/dev.db
             sudo docker run --rm \
               -v /var/data/nextjs-app/dev.db:/app/prisma/dev.db \
               -e DATABASE_URL='file:./prisma/dev.db' \
@@ -86,7 +87,6 @@ jobs:
             fi
             
             echo "Starting new application container..."
-            # 修正：将宿主机文件挂载到容器内的 /app/prisma/dev.db
             sudo docker run -d -p 80:3000 \
               --name my-running-cloud \
               -v /var/data/nextjs-app/dev.db:/app/prisma/dev.db \
