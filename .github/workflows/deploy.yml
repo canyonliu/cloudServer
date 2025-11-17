@@ -1,4 +1,4 @@
-name: Build and Deploy Artifacts (构建并部署产物)
+name: Build on GitHub and Deploy to Server (远程构建与部署)
 
 on:
   push:
@@ -15,22 +15,43 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'npm'
 
       - name: Install Dependencies (安装依赖)
         run: npm ci
 
+      - name: Generate Prisma Client (生成Prisma客户端)
+        # 关键修正：在此步骤注入环境变量
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx prisma generate
+
+
       - name: Build Next.js Application (构建Next.js应用)
+        # 关键修正：在此步骤注入环境变量
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: npm run build
 
       - name: Create Deployment Package (创建部署压缩包)
         run: |
-          mkdir -p public deployment-package
-          cp -r .next deployment-package/
-          if [ -d "public" ]; then
-            cp -r public deployment-package/
-          fi
-          cp next.config.js package.json Dockerfile deployment-package/
+          mkdir -p deployment-package
+          cp -r .next/standalone deployment-package/
+          cp -r .next/static deployment-package/.next/static
+          if [ -d "public" ]; then cp -r public deployment-package/; fi
+          cp -r prisma deployment-package/
+          cp package.json Dockerfile deployment-package/
           tar -czf deployment-package.tar.gz -C deployment-package .
+
+      - name: Ensure Directories Exist on Server (确保服务器目录存在)
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            mkdir -p ~/deploy/clound_云服务/cloudServer
+            mkdir -p /var/data/nextjs-app
 
       - name: Deploy to Server via SCP (通过SCP部署到服务器)
         uses: appleboy/scp-action@v0.1.4
@@ -41,7 +62,7 @@ jobs:
           source: "deployment-package.tar.gz"
           target: "~/deploy/clound_云服务/cloudServer"
 
-      - name: Unpack and Run on Server (在服务器上解压并运行)
+      - name: Unpack, Migrate, and Run on Server (在服务器上解压、迁移并运行)
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -50,10 +71,27 @@ jobs:
           script: |
             cd ~/deploy/clound_云服务/cloudServer
             tar -xzf deployment-package.tar.gz
+            
             sudo docker build -t my-next-app:${{ github.sha }} .
+            
+            echo "Running database migration..."
+            # 修正：将宿主机文件挂载到容器内的 /app/prisma/dev.db
+            sudo docker run --rm \
+              -v /var/data/nextjs-app/dev.db:/app/prisma/dev.db \
+              -e DATABASE_URL='file:./prisma/dev.db' \
+              my-next-app:${{ github.sha }} npx prisma migrate deploy
+            
             if [ $(sudo docker ps -q -f name=my-running-cloud) ]; then 
-              sudo docker stop my-running-cloud && 
-              sudo docker rm my-running-cloud; 
+              sudo docker stop my-running-cloud && sudo docker rm my-running-cloud; 
             fi
-            sudo docker run -d -p 80:3000 --name my-running-cloud --env NEWS_API_KEY=${{ secrets.NEWS_API_KEY }} my-next-app:${{ github.sha }}
+            
+            echo "Starting new application container..."
+            # 修正：将宿主机文件挂载到容器内的 /app/prisma/dev.db
+            sudo docker run -d -p 80:3000 \
+              --name my-running-cloud \
+              -v /var/data/nextjs-app/dev.db:/app/prisma/dev.db \
+              -e DATABASE_URL='file:./prisma/dev.db' \
+              -e NEWS_API_KEY=${{ secrets.NEWS_API_KEY }} \
+              my-next-app:${{ github.sha }}
+              
             sudo docker image prune -f
