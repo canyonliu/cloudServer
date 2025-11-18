@@ -1,9 +1,9 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import prisma from '../../../../lib/prisma';
+import prisma from '../../../lib/prisma';
 
 /**
- * API handler for fetching a user by their openid.
- * Handles GET requests to /api/xcx/users/[openid]
+ * API handler for fetching a user by their openid from a query parameter.
+ * Handles GET requests to /api/xcx/getUser?openid=...
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { openid } = req.query;
 
   if (!openid || typeof openid !== 'string') {
-    return res.status(400).json({ code: 1, message: 'A valid openid is required as a URL parameter' });
+    return res.status(400).json({ code: 1, message: 'A valid openid is required as a query parameter' });
   }
 
   try {
