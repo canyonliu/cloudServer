@@ -4,10 +4,10 @@ FROM node:18-alpine AS builder
 # 设置工作目录
 WORKDIR /app
 
-# 关键修正：声明一个构建参数，以便从 docker build 命令接收 DATABASE_URL
+# 声明一个构建参数，以便从 docker build 命令接收 DATABASE_URL
 ARG DATABASE_URL
 
-# 关键修正：将构建参数设置为一个环境变量，以便后续的 RUN 命令可以使用
+# 将构建参数设置为一个环境变量，以便后续的 RUN 命令可以使用
 ENV DATABASE_URL=${DATABASE_URL}
 
 # 复制 package.json 和 lock 文件
@@ -18,6 +18,9 @@ RUN npm ci
 
 # 复制项目剩余的源代码
 COPY . .
+
+# 关键修正：确保 public 目录存在，以防源项目中没有此目录
+RUN mkdir -p public
 
 # 明确指定 Prisma 二进制文件目标
 # 这一步确保在构建时，与最终运行环境匹配的引擎被生成
