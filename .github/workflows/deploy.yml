@@ -86,6 +86,11 @@ jobs:
             cd ~/deploy/clound_云服务/cloudServer
             tar -xzf deployment-package.tar.gz
             
+            # 诊断步骤：列出解压后的 API 路由文件，检查是否存在
+            echo "--- Inspecting deployed server files ---"
+            ls -lR .next/server/pages/api
+            echo "----------------------------------------"
+            
             sudo docker build -t my-next-app:${{ github.sha }} .
             
             echo "Running database migration..."
