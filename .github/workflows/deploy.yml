@@ -5,9 +5,9 @@ on:
     branches: ["before_database"]
 
 env:
-  # 定义镜像名称
+  # 定义镜像名称，并转换为小写
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository | toLower }} # 关键修正：转换为小写
 
 jobs:
   build-and-push-image:
