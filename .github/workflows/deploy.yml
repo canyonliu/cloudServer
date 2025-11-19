@@ -6,12 +6,15 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  # 关键修正：使用正确的 toLower() 函数语法
-  IMAGE_NAME: ${{ toLower(github.repository) }}
+  # IMAGE_NAME 将在 job 内部的步骤中动态设置
 
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
+    # 将镜像名称设置为 job 的输出，以便其他 job 可以使用
+    outputs:
+      IMAGE_NAME: ${{ steps.set_vars.outputs.IMAGE_NAME }}
+      IMAGE_TAG: ${{ steps.set_vars.outputs.IMAGE_TAG }}
     permissions:
       contents: read
       packages: write
@@ -19,6 +22,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set up variables
+        id: set_vars
+        run: |
+          # 关键修正：使用 shell 命令将 github.repository 转换为小写
+          LOWERCASE_REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_NAME=${LOWERCASE_REPO}" >> $GITHUB_OUTPUT
+          echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -31,20 +42,20 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ steps.set_vars.outputs.IMAGE_NAME }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ env.REGISTRY }}/${{ steps.set_vars.outputs.IMAGE_NAME }}:${{ steps.set_vars.outputs.IMAGE_TAG }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             DATABASE_URL=${{ secrets.DATABASE_URL }}
 
   deploy-on-server:
-    needs: build-and-push-image
+    needs: build-and-push-image # 等待镜像构建推送完成后再执行
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to Server via SSH
@@ -54,12 +65,15 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            IMAGE_TAG=${{ github.sha }}
-            IMAGE_NAME=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+            # 从上一个 job 获取镜像名称和标签
+            IMAGE_TAG=${{ needs.build-and-push-image.outputs.IMAGE_TAG }}
+            IMAGE_NAME=${{ env.REGISTRY }}/${{ needs.build-and-push-image.outputs.IMAGE_NAME }}
             CONTAINER_NAME=my-running-cloud
             
+            echo "Logging into GHCR..."
             echo ${{ secrets.GH_PAT }} | sudo docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
             
+            echo "Pulling latest image..."
             sudo docker pull $IMAGE_NAME:$IMAGE_TAG
             
             echo "Running database migration..."
@@ -69,8 +83,10 @@ jobs:
               $IMAGE_NAME:$IMAGE_TAG \
               npx prisma migrate deploy
             
+            echo "Changing database file ownership..."
             sudo chown 1000:1000 ~/data/nextjs-app/dev.db
             
+            echo "Stopping and removing old container..."
             if [ $(sudo docker ps -q -f name=$CONTAINER_NAME) ]; then 
               sudo docker stop $CONTAINER_NAME && sudo docker rm $CONTAINER_NAME; 
             fi
@@ -83,4 +99,5 @@ jobs:
               -e NEWS_API_KEY=${{ secrets.NEWS_API_KEY }} \
               $IMAGE_NAME:$IMAGE_TAG
               
+            echo "Pruning old images..."
             sudo docker image prune -a -f
