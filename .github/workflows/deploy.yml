@@ -82,14 +82,14 @@ jobs:
               sudo docker stop $CONTAINER_NAME && sudo docker rm $CONTAINER_NAME; 
             fi
             
-            # 运行新的应用容器
-            echo "Starting new application container..."
-            sudo docker run -d -p 80:3000 \
+            # 运行新的应用容器（去掉 -d，直接在前台运行以捕获日志）
+            echo "Starting new application container in foreground for diagnostics..."
+            sudo docker run -p 80:3000 \
               --name $CONTAINER_NAME \
               -v ~/data/nextjs-app/dev.db:/app/prisma/dev.db \
               -e DATABASE_URL='file:./prisma/dev.db' \
               -e NEWS_API_KEY=${{ secrets.NEWS_API_KEY }} \
-              $IMAGE_NAME:$IMAGE_TAG
+              $IMAGE_NAME:$IMAGE_TAG || true
               
             # 清理旧的、未使用的 Docker 镜像
             sudo docker image prune -a -f
