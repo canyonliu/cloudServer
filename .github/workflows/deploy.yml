@@ -2,7 +2,7 @@ name: Build and Push to GHCR, then Deploy on Server
 
 on:
   push:
-    branches: ["deploy"]
+    branches: ["before_database"]
 
 env:
   # 定义镜像名称
