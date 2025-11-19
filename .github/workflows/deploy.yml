@@ -35,14 +35,25 @@ jobs:
           # 关键修正：预先创建所有需要的子目录
           mkdir -p deployment-package/.next
           
-          # 复制所有构建产物
-          cp -r .next/standalone deployment-package/
+          # 关键修正：使用 '/.' 复制 standalone 目录的内容，而不是目录本身
+          echo "Copying standalone output..."
+          cp -r .next/standalone/. deployment-package/
+          
+          echo "Copying static assets..."
           cp -r .next/static deployment-package/.next/
-          if [ -d "public" ]; then cp -r public deployment-package/; fi
+          
+          if [ -d "public" ]; then
+            echo "Copying public directory..."
+            cp -r public deployment-package/
+          fi
+          
+          echo "Copying Prisma schema..."
           cp -r prisma deployment-package/
+          
+          echo "Copying package files..."
           cp package.json Dockerfile deployment-package/
           
-          # 打包
+          echo "Creating archive..."
           tar -czf deployment-package.tar.gz -C deployment-package .
 
       - name: Ensure Directories Exist on Server (确保服务器目录存在)
