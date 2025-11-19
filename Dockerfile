@@ -4,6 +4,12 @@ FROM node:18-alpine AS builder
 # 设置工作目录
 WORKDIR /app
 
+# 关键修正：声明一个构建参数，以便从 docker build 命令接收 DATABASE_URL
+ARG DATABASE_URL
+
+# 关键修正：将构建参数设置为一个环境变量，以便后续的 RUN 命令可以使用
+ENV DATABASE_URL=${DATABASE_URL}
+
 # 复制 package.json 和 lock 文件
 COPY package.json package-lock.json ./
 
@@ -37,4 +43,5 @@ RUN npm install --omit=dev
 
 EXPOSE 3000
 
+# 最终的 CMD 使用 .next/server.js，这是 Next.js 14+ 的推荐做法
 CMD ["node", ".next/server.js"]
