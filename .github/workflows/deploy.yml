@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  # IMAGE_NAME 将在 job 内部的步骤中动态设置
+  IMAGE_NAME: ${{ toLower(github.repository) }}
 
 jobs:
   build-and-push-image:
@@ -99,5 +99,5 @@ jobs:
               -e NEWS_API_KEY=${{ secrets.NEWS_API_KEY }} \
               $IMAGE_NAME:$IMAGE_TAG
               
-            echo "Pruning old images..."
+            echo "Pruning old Docker images..."
             sudo docker image prune -a -f
