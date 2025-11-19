@@ -6,12 +6,12 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ toLower(github.repository) }}
+  # IMAGE_NAME 将在 job 内部的步骤中动态设置
 
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
-    # 将镜像名称设置为 job 的输出，以便其他 job 可以使用
+    # 将镜像名称和标签设置为 job 的输出，以便其他 job 可以使用
     outputs:
       IMAGE_NAME: ${{ steps.set_vars.outputs.IMAGE_NAME }}
       IMAGE_TAG: ${{ steps.set_vars.outputs.IMAGE_TAG }}
