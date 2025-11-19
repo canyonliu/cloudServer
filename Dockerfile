@@ -1,22 +1,40 @@
-# 生产环境运行器 Dockerfile
-# 假设所有构建产物都已存在于 Docker 构建上下文中
+# --- 阶段 1: 构建器 (Builder) ---
+FROM node:18-alpine AS builder
 
-FROM node:18-alpine AS runner
+# 设置工作目录
 WORKDIR /app
 
-ENV NODE_ENV=production
+# 复制 package.json 和 lock 文件
+COPY package.json package-lock.json ./
 
-# 复制 Next.js standalone 应用产物
-COPY .next/standalone ./
-COPY .next/static ./.next/static
+# 安装所有依赖 (包括 devDependencies，因为需要 prisma CLI)
+RUN npm ci
 
-# 复制 public 目录
-COPY public ./public
+# 复制项目剩余的源代码
+COPY . .
 
-# 复制 Prisma schema，这对于在生产环境中运行迁移是必需的
-COPY prisma ./prisma
+# 明确指定 Prisma 二进制文件目标
+# 这一步确保在构建时，与最终运行环境匹配的引擎被生成
+RUN npx prisma generate --schema=./prisma/schema.prisma
+
+# 构建 Next.js 应用
+RUN npm run build
+
+# --- 阶段 2: 运行器 (Runner) ---
+FROM node:18-alpine AS runner
+
+WORKDIR /app
+
+# 从 builder 阶段复制 package.json 和 .next 目录
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/prisma ./prisma
+
+# 从 builder 阶段复制生产环境所需的 node_modules
+# 这是一个优化，避免将 devDependencies 打包到最终镜像
+RUN npm install --omit=dev
 
 EXPOSE 3000
 
-# 启动应用
-CMD ["node", "server.js"]
+CMD ["node", ".next/server.js"]

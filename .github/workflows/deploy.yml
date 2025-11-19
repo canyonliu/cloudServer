@@ -1,105 +1,95 @@
-name: Build on GitHub and Deploy to Server (远程构建与部署)
+name: Build and Push to GHCR, then Deploy on Server
 
 on:
   push:
-    branches: ["before_database"]
+    branches: ["deploy"]
+
+env:
+  # 定义镜像名称
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-deploy:
+  build-and-push-image:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # 授权 job 可以推送到 GHCR
+
     steps:
-      - name: Checkout repository (检出代码)
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js (设置Node.js环境)
-        uses: actions/setup-node@v4
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
         with:
-          node-version: '18'
-          cache: 'npm'
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT }} # 使用您创建的 Personal Access Token
 
-      - name: Install Dependencies (安装依赖)
-        run: npm ci
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      - name: Generate Prisma Client (生成Prisma客户端)
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: npx prisma generate
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # 在构建时传入 DATABASE_URL，以便 prisma generate 能正常工作
+          build-args: |
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
 
-      - name: Build Next.js Application (构建Next.js应用)
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: npm run build
-
-      - name: Create Deployment Package (创建部署压缩包)
-        run: |
-          # 关键修正：预先创建所有需要的子目录
-          mkdir -p deployment-package/.next
-          
-          # 关键修正：使用 '/.' 复制 standalone 目录的内容，而不是目录本身
-          echo "Copying standalone output..."
-          cp -r .next/standalone/. deployment-package/
-          
-          echo "Copying static assets..."
-          cp -r .next/static deployment-package/.next/
-          
-          if [ -d "public" ]; then
-            echo "Copying public directory..."
-            cp -r public deployment-package/
-          fi
-          
-          echo "Copying Prisma schema..."
-          cp -r prisma deployment-package/
-          
-          echo "Copying package files..."
-          cp package.json Dockerfile deployment-package/
-          
-          echo "Creating archive..."
-          tar -czf deployment-package.tar.gz -C deployment-package .
-
-      - name: Ensure Directories Exist on Server (确保服务器目录存在)
+  deploy-on-server:
+    needs: build-and-push-image # 等待镜像构建推送完成后再执行
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            mkdir -p ~/deploy/clound_云服务/cloudServer
-            # 修正：将持久化目录放在用户主目录下
-            mkdir -p ~/data/nextjs-app
-
-      - name: Deploy to Server via SCP (通过SCP部署到服务器)
-        uses: appleboy/scp-action@v0.1.4
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "deployment-package.tar.gz"
-          target: "~/deploy/clound_云服务/cloudServer"
-
-      - name: Unpack, Migrate, and Run on Server (在服务器上解压、迁移并运行)
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd ~/deploy/clound_云服务/cloudServer
-            tar -xzf deployment-package.tar.gz
+            # 使用环境变量，使其更易于维护
+            IMAGE_TAG=${{ github.sha }}
+            IMAGE_NAME=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+            CONTAINER_NAME=my-running-cloud
             
-            sudo docker build -t my-next-app:${{ github.sha }} .
+            # 登录到 GHCR (如果您的服务器需要)
+            echo ${{ secrets.GH_PAT }} | sudo docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
             
+            # 拉取最新的镜像
+            sudo docker pull $IMAGE_NAME:$IMAGE_TAG
+            
+            # 运行数据库迁移
             echo "Running database migration..."
-            # 修正：将 docker run 命令写在单行以保证执行正确
-            sudo docker run --rm -v ~/data/nextjs-app/dev.db:/app/prisma/dev.db -e DATABASE_URL='file:./prisma/dev.db' my-next-app:${{ github.sha }} npx prisma migrate deploy
+            sudo docker run --rm \
+              -v ~/data/nextjs-app/dev.db:/app/prisma/dev.db \
+              -e DATABASE_URL='file:./prisma/dev.db' \
+              $IMAGE_NAME:$IMAGE_TAG \
+              npx prisma migrate deploy
             
+            # 更改数据库文件权限
             sudo chown 1000:1000 ~/data/nextjs-app/dev.db
             
-            if [ $(sudo docker ps -q -f name=my-running-cloud) ]; then 
-              sudo docker stop my-running-cloud && sudo docker rm my-running-cloud; 
+            # 停止并删除旧容器
+            if [ $(sudo docker ps -q -f name=$CONTAINER_NAME) ]; then 
+              sudo docker stop $CONTAINER_NAME && sudo docker rm $CONTAINER_NAME; 
             fi
             
+            # 运行新的应用容器
             echo "Starting new application container..."
-            # 修正：将 docker run 命令写在单行以保证执行正确
-            sudo docker run -d -p 80:3000 --name my-running-cloud -v ~/data/nextjs-app/dev.db:/app/prisma/dev.db -e DATABASE_URL='file:./prisma/dev.db' -e NEWS_API_KEY=${{ secrets.NEWS_API_KEY }} my-next-app:${{ github.sha }}
+            sudo docker run -d -p 80:3000 \
+              --name $CONTAINER_NAME \
+              -v ~/data/nextjs-app/dev.db:/app/prisma/dev.db \
+              -e DATABASE_URL='file:./prisma/dev.db' \
+              -e NEWS_API_KEY=${{ secrets.NEWS_API_KEY }} \
+              $IMAGE_NAME:$IMAGE_TAG
               
-            sudo docker image prune -f
+            # 清理旧的、未使用的 Docker 镜像
+            sudo docker image prune -a -f
