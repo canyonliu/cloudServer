@@ -81,6 +81,10 @@ jobs:
             # 修正：将 docker run 命令写在单行以保证执行正确
             sudo docker run --rm -v ~/data/nextjs-app/dev.db:/app/prisma/dev.db -e DATABASE_URL='file:./prisma/dev.db' my-next-app:${{ github.sha }} npx prisma migrate deploy
             
+            # 关键修正：更改数据库文件的所有者，使其能被容器内的 node 用户写入
+            echo "Changing database file ownership..."
+            sudo chown 1000:1000 ~/data/nextjs-app/dev.db
+            
             if [ $(sudo docker ps -q -f name=my-running-cloud) ]; then 
               sudo docker stop my-running-cloud && sudo docker rm my-running-cloud; 
             fi
