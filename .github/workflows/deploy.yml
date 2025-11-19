@@ -86,19 +86,12 @@ jobs:
             cd ~/deploy/clound_云服务/cloudServer
             tar -xzf deployment-package.tar.gz
             
-            # 诊断步骤：列出解压后的 API 路由文件，检查是否存在
-            echo "--- Inspecting deployed server files ---"
-            ls -lR .next/server/pages/api
-            echo "----------------------------------------"
-            
             sudo docker build -t my-next-app:${{ github.sha }} .
             
             echo "Running database migration..."
             # 修正：将 docker run 命令写在单行以保证执行正确
             sudo docker run --rm -v ~/data/nextjs-app/dev.db:/app/prisma/dev.db -e DATABASE_URL='file:./prisma/dev.db' my-next-app:${{ github.sha }} npx prisma migrate deploy
             
-            # 关键修正：更改数据库文件的所有者，使其能被容器内的 node 用户写入
-            echo "Changing database file ownership..."
             sudo chown 1000:1000 ~/data/nextjs-app/dev.db
             
             if [ $(sudo docker ps -q -f name=my-running-cloud) ]; then 
@@ -108,11 +101,5 @@ jobs:
             echo "Starting new application container..."
             # 修正：将 docker run 命令写在单行以保证执行正确
             sudo docker run -d -p 80:3000 --name my-running-cloud -v ~/data/nextjs-app/dev.db:/app/prisma/dev.db -e DATABASE_URL='file:./prisma/dev.db' -e NEWS_API_KEY=${{ secrets.NEWS_API_KEY }} my-next-app:${{ github.sha }}
-            
-            # 最终诊断：暂停5秒，然后打印容器的启动日志
-            echo "--- Waiting for container to start and viewing logs ---"
-            sleep 5
-            sudo docker logs my-running-cloud
-            echo "----------------------------------------------------"
               
             sudo docker image prune -f
