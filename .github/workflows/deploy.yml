@@ -2,7 +2,7 @@ name: Build and Deploy Artifacts (构建并部署产物)
 
 on:
   push:
-    branches: ["deploy"]
+    branches: ["work"]
 
 jobs:
   build-and-deploy:
