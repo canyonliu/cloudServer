@@ -14,7 +14,7 @@ jobs:
       - name: Setup Node.js (设置Node.js环境)
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: "18"
 
       - name: Install Dependencies (安装依赖)
         run: npm ci
@@ -51,9 +51,8 @@ jobs:
             cd ~/deploy/clound_云服务/cloudServer
             tar -xzf deployment-package.tar.gz
             sudo docker build -t my-next-app:${{ github.sha }} .
-            if [ $(sudo docker ps -q -f name=my-running-cloud) ]; then 
-              sudo docker stop my-running-cloud && 
-              sudo docker rm my-running-cloud; 
+            if [ $(sudo docker ps -aq -f name=my-running-cloud) ]; then 
+              sudo docker rm -f my-running-cloud; 
             fi
             sudo docker run -d -p 80:3000 --name my-running-cloud --env NEWS_API_KEY=${{ secrets.NEWS_API_KEY }} my-next-app:${{ github.sha }}
             sudo docker image prune -f

@@ -1,6 +1,6 @@
 # B方案：用于封装预构建产物的Dockerfile
 # 假设所有需要的文件都已存在于上下文中
-FROM node:18-alpine AS runner
+FROM node:18-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
